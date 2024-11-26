@@ -5,7 +5,7 @@ import uuid
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("logs/console.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("logs/console.log")],
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ class Book:
     Методы:
         __repr__: Возвращает строковое представление объекта.
         __eq__: Сравнивает книги по уникальному идентификатору.
-
     """
 
     def __init__(self, title: str, author: str, year: int):
@@ -40,7 +39,6 @@ class Book:
         Создает экземпляр книги с уникальным id, статусом
         "В наличии" (по умолчанию) и заданными атрибутами: название, автор и год издания. Проверяет входные
         данные на корректность, выбрасывая исключения в случае ошибок.
-
         """
 
         if not title or not isinstance(title, str):
@@ -64,18 +62,50 @@ class Book:
 
         logger.info("Создана новая книга: %s (%d)", self.title, self.year)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ID: {self.id}, Название: {self.title}, Автор: {self.author}, Год: {self.year}, Статус: {self.status}"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """
         Сравнивает текущий объект книги с другим объектом.
 
         Метод проверяет, является ли переданный объект экземпляром класса Book.
         Если да, то сравниваются id книг.
-
         """
         if isinstance(other, Book):
             return self.id == other.id
 
         return False
+
+    def to_dict(self):
+        """
+        Преобразует объект книги в словарь.
+        """
+        return {
+            "id": self.id,
+            "title": self.title,
+            "author": self.author,
+            "year": self.year,
+            "status": self.status,
+        }
+
+
+class Library:
+
+    def __init__(self):
+        self.books = []
+
+    def add_book(self, title: str, author: str, year: int) -> None:
+        """
+        Добавляет книгу в библиотеку.
+
+        Создает новый объект книги с указанными атрибутами (название, автор, год издания) и добавляет его в список
+        книг библиотеки. Если входные данные некорректны, будет выброшено исключение TypeError, которое будет
+        зафиксировано в логах.
+        """
+        try:
+            new_book = Book(title, author, year)
+            self.books.append(new_book)
+            logger.info("Добавлена книга: %s", new_book)
+        except TypeError as e:
+            logger.error("Ошибка при добавлении книги: %s", e)
