@@ -132,7 +132,7 @@ class Library:
         """
         Ищет книги по title, author, year.
 
-        Пользователь может указать один или несколько параметров для поиска.
+        Можно указать один или несколько параметров для поиска.
 
         Аргументы:
             kwargs: Ключи - это параметры для поиска (title, author, year),
@@ -150,7 +150,7 @@ class Library:
             if key == "year" and not isinstance(value, int):
                 logger.error("Некорректный тип значения для year: %s", value)
                 raise TypeError("Year должен быть целым числом")
-            
+   
             if key in {"title", "author"} and not isinstance(value, str):
                 logger.error("Некорректный тип значения для %s: %s", key, value)
                 raise TypeError(f"{key} должен быть строкой")
@@ -158,7 +158,7 @@ class Library:
         if not search:
             logger.error("Некорректные параметры поиска: %s", kwargs)
             raise ValueError(f"Допустимые параметры поиска: {', '.join(sup_keys)}")
-        
+
 
         result = [
             book for book in self.books if
@@ -172,3 +172,23 @@ class Library:
             return []
 
         return result
+
+    def all_books(self) -> None:
+        """
+        Печатает список всех книг.
+
+        Если библиотека пуста, выводит сообщение об отсутствии книг.
+        """
+        if not self.books:
+            logger.warning("Библиотека пуста")
+            print("Библиотека пуста")
+            return
+
+        print(f"{'ID':<36} | {'Название':<20} | {'Автор':<20} | {'Год':<6} | {'Статус':<10}")
+        print("-" * 92)
+
+        for book in self.books:
+
+            print(f"{book.id:<36} | {book.title:<20} | {book.author:<20} | {book.year:<6} | {book.status:<10}")
+            
+        logger.info("Отображено книг: %d", len(self.books))

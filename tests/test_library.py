@@ -1,5 +1,7 @@
-import unittest
+import sys
 import uuid
+import unittest
+from io import StringIO
 
 from library import Library
 
@@ -10,8 +12,6 @@ class TestLibrary(unittest.TestCase):
 
         self.library = Library()
         self.library.add_book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
-
-        
 
     def test_add_book(self):
 
@@ -101,6 +101,40 @@ class TestLibrarySearch(unittest.TestCase):
 
 #  ______________________________________________________________________________  #
 
+class TestLibraryAll(unittest.TestCase):
+
+    def setUp(self):
+
+        self.library = Library()
+
+    def test_empty_library(self):
+
+        expected_output = "Библиотека пуста\n"
+
+        current_output = StringIO()
+        sys.stdout = current_output
+        self.library.all_books()
+        sys.stdout = sys.__stdout__
+
+        self.assertEqual(current_output.getvalue(), expected_output)
+
+    def test_all_books(self):
+
+        self.library.add_book("1984", "Джордж Оруэлл", 1949)
+        self.library.add_book("Мы", "Евгений Замятин", 1920)
+
+        current_output = StringIO()
+        sys.stdout = current_output
+        self.library.all_books()
+        sys.stdout = sys.__stdout__
+        output_lines = current_output.getvalue().splitlines()
+
+        self.assertEqual(output_lines[0], "ID                                   | Название             | Автор                | Год    | Статус    ")
+        self.assertEqual(output_lines[1], "--------------------------------------------------------------------------------------------")
+        self.assertEqual(len(output_lines), 4)
         
-
-
+        self.assertIn("1984", output_lines[2])
+        self.assertIn("Джордж Оруэлл", output_lines[2])
+        self.assertIn("Мы", output_lines[3])
+        self.assertIn("Евгений Замятин", output_lines[3])
+    
