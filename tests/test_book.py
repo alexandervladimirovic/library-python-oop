@@ -36,3 +36,36 @@ class TestBook(unittest.TestCase):
         book5 = book1
         self.assertTrue(book1 == book5)
 
+    def test_to_dict(self):
+
+        tested_dict = {
+            "id": self.book.id,
+            "title": "Великий Гэтсби",
+            "author": "Ф. Скотт Фицджеральд",
+            "year": 1925,
+            "status": "В наличии"
+        }
+
+        book_to_dict = self.book.to_dict()
+
+        self.assertEqual(book_to_dict, tested_dict)
+
+
+    def test_to_dict_miss(self):
+
+        self.book.status = None
+
+        tested_dict = {
+            "id": self.book.id,
+            "title": "Великий Гэтсби",
+            "author": "Ф. Скотт Фицджеральд",
+            "year": 1925,
+            "status": None
+        }
+
+        book_to_dict = self.book.to_dict()
+
+        self.assertEqual(book_to_dict, tested_dict)
+
+if __name__ == '__main__':
+    unittest.main()

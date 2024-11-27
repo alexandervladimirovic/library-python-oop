@@ -7,11 +7,13 @@ from library import Library
 class TestLibrary(unittest.TestCase):
 
     def setUp(self):
+
         self.library = Library()
         self.library.add_book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
 
-    def test_add_book(self):
+        
 
+    def test_add_book(self):
 
         self.assertEqual(self.library.books[0].title, "451 градус по Фаренгейту")
         self.assertEqual(self.library.books[0].author, "Рэй Брэдбери")
@@ -40,7 +42,65 @@ class TestLibrary(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.library.remove_book(invalid_id)
 
+#  ______________________________________________________________________________  #
 
+class TestLibrarySearch(unittest.TestCase):
 
+    def setUp(self):
+
+        self.library = Library()
+        self.library.add_book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
+        self.library.add_book("1984", "Джордж Оруэлл", 1949)
+        self.library.add_book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
+        self.library.add_book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
+
+    def test_by_title(self):
+
+        results = self.library.search_books(title="Великий Гэтсби")
+        result = self.library.search_books(title="451 градус по Фаренгейту")
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(len(result), 1)
+
+    def test_by_author(self):
+
+        results = self.library.search_books(author="Ф. Скотт Фицджеральд")
+        result = self.library.search_books(author="Джордж Оруэлл")
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(len(result), 1)
+
+    def test_by_year(self):
+
+        results = self.library.search_books(year=1925)
+        result = self.library.search_books(year=1949)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(len(result), 1)
+
+    def test_comb(self):
+
+        results = self.library.search_books(title="1984", author="Джордж Оруэлл")
+        result = self.library.search_books(author="Рэй Брэдбери", year=1953)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(len(result), 1)
+
+    def test_invalid_key(self):
+
+        with self.assertRaises(ValueError):
+            self.library.search_books(genre="Роман")
+
+    def test_no_result(self):
+
+        result = self.library.search_books(title="Мы")
+        results = self.library.search_books(author="Евгений Замятин")
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(len(results), 0)
+
+#  ______________________________________________________________________________  #
+
+        
 
 

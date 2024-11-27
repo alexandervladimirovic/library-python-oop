@@ -99,7 +99,7 @@ class Library:
         """
         Добавляет книгу в библиотеку.
 
-        Создает новый объект книги с указанными атрибутами (название, автор, год издания) и добавляет его в список
+        Создает новый объект книги с указанными атрибутами и добавляет его в список
         книг библиотеки. Если входные данные некорректны, будет выброшено исключение TypeError, которое будет
         зафиксировано в логах.
         """
@@ -107,8 +107,10 @@ class Library:
             new_book = Book(title, author, year)
             self.books.append(new_book)
             logger.info("Добавлена книга: %s (%s, %d)", new_book.title, new_book.author, new_book.year)
+            logger.info("Всего книг в библиотеке: %d", len(self.books))
         except TypeError as e:
             logger.error("Ошибка при добавлении книги: %s", e)
+            raise
 
     def remove_book(self, book_id: str) -> None:
         """
@@ -125,3 +127,48 @@ class Library:
         else:
             logger.error("Книга с id %s не найдена", book_id)
             raise ValueError(f"Книга с id {book_id} не найдена") 
+
+    def search_books(self, **kwargs) -> list:
+        """
+        Ищет книги по title, author, year.
+
+        Пользователь может указать один или несколько параметров для поиска.
+
+        Аргументы:
+            kwargs: Ключи - это параметры для поиска (title, author, year),
+                           значения - искомые значения.
+        """
+        if not self.books:
+            logger.warning("Библиотека пуста")
+            return []
+
+        sup_keys = {"title", "author", "year"}
+        search = {key: value for key, value in kwargs.items() if key in sup_keys}
+
+        for key, value in search.items():
+
+            if key == "year" and not isinstance(value, int):
+                logger.error("Некорректный тип значения для year: %s", value)
+                raise TypeError("Year должен быть целым числом")
+            
+            if key in {"title", "author"} and not isinstance(value, str):
+                logger.error("Некорректный тип значения для %s: %s", key, value)
+                raise TypeError(f"{key} должен быть строкой")
+
+        if not search:
+            logger.error("Некорректные параметры поиска: %s", kwargs)
+            raise ValueError(f"Допустимые параметры поиска: {', '.join(sup_keys)}")
+        
+
+        result = [
+            book for book in self.books if
+            all(getattr(book, key) == value for key, value in search.items())
+        ]
+
+        if result:
+            logger.info("Найдены книги: %s", [book.to_dict() for book in result])
+        else:
+            logger.warning("Книги по заданным критериям не найдены: %s", search)
+            return []
+
+        return result
