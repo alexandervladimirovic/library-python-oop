@@ -137,4 +137,35 @@ class TestLibraryAll(unittest.TestCase):
         self.assertIn("Джордж Оруэлл", output_lines[2])
         self.assertIn("Мы", output_lines[3])
         self.assertIn("Евгений Замятин", output_lines[3])
+
+#  ______________________________________________________________________________  #
+
+class TestUpdateStatus(unittest.TestCase):
+
+    def setUp(self):
+
+        self.library = Library()
+
+        self.library.add_book("1984", "Джордж Оруэлл", 1949)
+        self.library.add_book("Мы", "Евгений Замятин", 1920)
+        
+        self.book_id = self.library.books[0].id
+
+    def test_update(self):
+
+        self.library.update_status(self.book_id, "Выдана")
+
+        update_book = next(book for book in self.library.books if self.book_id == book.id)
+        self.assertEqual(update_book.status, "Выдана")
+
+    def test_invalid_update(self):
+
+        with self.assertRaises(ValueError) as context:
+            self.library.update_status(self.book_id, "Потеряна")
+        
+        self.assertIn("Недопустимый статус", str(context.exception))
+
+    
+
+
     

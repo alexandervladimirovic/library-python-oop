@@ -1,3 +1,4 @@
+import os
 import logging
 import uuid
 
@@ -5,10 +6,13 @@ import uuid
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("logs/console.log")],
+    handlers=[logging.FileHandler("logs/console.log")]
 )
 
 logger = logging.getLogger(__name__)
+
+if not os.path.exists("logs"):
+    os.makedirs("logs")
 
 
 class Book:
@@ -59,6 +63,7 @@ class Book:
         self.title = title
         self.author = author
         self.year = year
+        #  Проверку на валидность сюда может?
 
         logger.info("Создана новая книга: %s (%d)", self.title, self.year)
 
@@ -93,7 +98,7 @@ class Book:
 class Library:
 
     def __init__(self):
-        self.books = []
+        self.books = []  # Может лучше будет dict?!
 
     def add_book(self, title: str, author: str, year: int) -> None:
         """
@@ -119,7 +124,7 @@ class Library:
         Если книга с таким id не существует, генерируется исключение ValueError.
         """
 
-        book_remove = next((book for book in self.books if book.id == book_id), None)
+        book_remove = next((book for book in self.books if book.id == book_id), None)  # Сделать отдельную функцию поиска по id
 
         if book_remove:
             self.books.remove(book_remove)
@@ -192,3 +197,29 @@ class Library:
             print(f"{book.id:<36} | {book.title:<20} | {book.author:<20} | {book.year:<6} | {book.status:<10}")
             
         logger.info("Отображено книг: %d", len(self.books))
+
+    def update_status(self, book_id: str, new_status: str):
+        """
+        Изменяет статус книги по id.
+
+        Пользователь указывает id книги и новый статус.
+        Если книга с указанным id не найдена или статус некорректный, генерируется исключение.
+        """
+        valid_statuses = {"В наличии", "Выдана"}
+        if new_status.capitalize() not in valid_statuses:
+
+            logger.error("Некорректный статус: %s", new_status)
+            raise ValueError(f"Недопустимый статус. Возможные значения: {', '.join(valid_statuses)}")
+        
+        book = next((book for book in self.books if book.id == book_id), None) # Сделать отдельную функцию на поиск книги по id
+
+        if not book:
+
+            logger.error("Книга с id %s не найдена", book_id)
+            raise ValueError(f"Книга с id {book_id} не найдена")
+
+        book.status = new_status.capitalize()
+
+        logger.info("Статус книги с id %s изменён на '%s'", book_id, new_status)
+        print(f"Статус книги с id {book_id} изменён на '{new_status}'")
+        
