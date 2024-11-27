@@ -106,6 +106,22 @@ class Library:
         try:
             new_book = Book(title, author, year)
             self.books.append(new_book)
-            logger.info("Добавлена книга: %s", new_book)
+            logger.info("Добавлена книга: %s (%s, %d)", new_book.title, new_book.author, new_book.year)
         except TypeError as e:
             logger.error("Ошибка при добавлении книги: %s", e)
+
+    def remove_book(self, book_id: str) -> None:
+        """
+        Удаляет книгу из библиотеки по id.
+
+        Если книга с таким id не существует, генерируется исключение ValueError.
+        """
+
+        book_remove = next((book for book in self.books if book.id == book_id), None)
+
+        if book_remove:
+            self.books.remove(book_remove)
+            logger.info("Книга с id %s удалена", book_id)
+        else:
+            logger.error("Книга с id %s не найдена", book_id)
+            raise ValueError(f"Книга с id {book_id} не найдена") 
