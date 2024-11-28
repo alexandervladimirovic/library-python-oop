@@ -1,7 +1,12 @@
 import os
+import json
 import logging
 import uuid
 
+logger = logging.getLogger(__name__)
+
+if not os.path.exists("logs"):
+    os.makedirs("logs")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -9,10 +14,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("logs/console.log")]
 )
 
-logger = logging.getLogger(__name__)
-
-if not os.path.exists("logs"):
-    os.makedirs("logs")
 
 
 class Book:
@@ -63,7 +64,6 @@ class Book:
         self.title = title
         self.author = author
         self.year = year
-        #  Проверку на валидность сюда может?
 
         logger.info("Создана новая книга: %s (%d)", self.title, self.year)
 
@@ -97,8 +97,51 @@ class Book:
 
 class Library:
 
+    VALID_STATUSES = {"в наличии", "выдана"}
+
     def __init__(self):
-        self.books = []  # Может лучше будет dict?!
+        self.books = {}
+
+    def write_data_to_json(self, file_path):
+        """
+        Записывает данные библиотеки в файл JSON.
+        """
+        try:
+            with open(file_path, "w", encoding="utf-8") as file:
+                json.dump([book.to_dict() for book in self.books.values()], file, indent=4, ensure_ascii=False)
+            logger.info("Данные успешно записаны в файл library.json")
+        except Exception as e:
+            logger.error("Ошибка при записи данных в файл: %s", e)
+            raise ValueError(f"Ошибка при записи данных в файл: {e}") from e
+
+    def read_data_from_json(self, file_path):
+        """
+        Читает данные библиотеки из файла JSON.
+        """
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                books_data = json.load(file)
+
+                for book_data in books_data:
+                    
+                    book = Book(
+                                    book_data["title"],
+                                    book_data["author"],
+                                    book_data["year"]
+                                )
+                    book.id = book_data["id"]
+                    book.status = book_data["status"]
+                    self.books[book.id] = book
+
+            logger.info("Данные успешно загружены из файла library.json")
+            
+        except FileNotFoundError as e:
+            logger.warning("Файл library.json не найден")
+            raise FileNotFoundError("Файл library.json не найден") from e
+        
+        except Exception as e:
+            logger.error("Ошибка при чтении данных из файла: %s", e)
+            raise ValueError(f"Ошибка при чтении данных из файла: {e}") from e
 
     def add_book(self, title: str, author: str, year: int) -> None:
         """
@@ -110,9 +153,10 @@ class Library:
         """
         try:
             new_book = Book(title, author, year)
-            self.books.append(new_book)
+            self.books[new_book.id] = new_book 
             logger.info("Добавлена книга: %s (%s, %d)", new_book.title, new_book.author, new_book.year)
             logger.info("Всего книг в библиотеке: %d", len(self.books))
+        
         except TypeError as e:
             logger.error("Ошибка при добавлении книги: %s", e)
             raise
@@ -123,11 +167,10 @@ class Library:
 
         Если книга с таким id не существует, генерируется исключение ValueError.
         """
-
-        book_remove = next((book for book in self.books if book.id == book_id), None)  # Сделать отдельную функцию поиска по id
+        book_remove = self.books.get(book_id)
 
         if book_remove:
-            self.books.remove(book_remove)
+            del self.books[book_id]
             logger.info("Книга с id %s удалена", book_id)
         else:
             logger.error("Книга с id %s не найдена", book_id)
@@ -145,6 +188,10 @@ class Library:
         """
         if not self.books:
             logger.warning("Библиотека пуста")
+            return []
+        
+        if not kwargs:
+            logger.warning("Параметры поиска не указаны")
             return []
 
         sup_keys = {"title", "author", "year"}
@@ -166,7 +213,7 @@ class Library:
 
 
         result = [
-            book for book in self.books if
+            book for book in self.books.values() if
             all(getattr(book, key) == value for key, value in search.items())
         ]
 
@@ -177,6 +224,12 @@ class Library:
             return []
 
         return result
+
+    def search_books_by_id(self, book_id: str) -> list:
+        """
+        Ищет книгу по id.
+        """
+        return next((book for book in self.books if book.id == book_id), None)
 
     def all_books(self) -> None:
         """
@@ -192,7 +245,7 @@ class Library:
         print(f"{'ID':<36} | {'Название':<20} | {'Автор':<20} | {'Год':<6} | {'Статус':<10}")
         print("-" * 92)
 
-        for book in self.books:
+        for book in self.books.values():
 
             print(f"{book.id:<36} | {book.title:<20} | {book.author:<20} | {book.year:<6} | {book.status:<10}")
             
@@ -205,13 +258,13 @@ class Library:
         Пользователь указывает id книги и новый статус.
         Если книга с указанным id не найдена или статус некорректный, генерируется исключение.
         """
-        valid_statuses = {"В наличии", "Выдана"}
-        if new_status.capitalize() not in valid_statuses:
 
-            logger.error("Некорректный статус: %s", new_status)
-            raise ValueError(f"Недопустимый статус. Возможные значения: {', '.join(valid_statuses)}")
+        if new_status.lower() not in self.VALID_STATUSES:
+
+            logger.error("Некорректный статус: %s", new_status.capitalize())
+            raise ValueError(f"Недопустимый статус. Возможные значения: {', '.join(self.VALID_STATUSES)}")
         
-        book = next((book for book in self.books if book.id == book_id), None) # Сделать отдельную функцию на поиск книги по id
+        book = self.search_books_by_id(book_id)
 
         if not book:
 
@@ -221,5 +274,4 @@ class Library:
         book.status = new_status.capitalize()
 
         logger.info("Статус книги с id %s изменён на '%s'", book_id, new_status)
-        print(f"Статус книги с id {book_id} изменён на '{new_status}'")
         
