@@ -10,10 +10,9 @@ def main():
     library = Library()
 
     while True:
-        time.sleep(5)
-        print("\nДобро пожаловать в библиотеку!")
 
-        print("\nДоступные команды:")
+        print("Доступные команды: \n")
+
         print("1. - Добавить книгу")
         print("2. - Удалить книгу")
         print("3. - Искать книги")
@@ -23,7 +22,7 @@ def main():
         print("7. - Загрузить библиотеку из JSON")
         print("8. - Выход")
 
-        command = input("Выберите команду: ")
+        command = input("\nВыберите команду: ")
 
         if command == "1":
             try:
@@ -31,6 +30,7 @@ def main():
                 author = input("Введите автора книги: ").strip()
                 year = int(input("Введите год издания книги: "))
                 library.add_book(title, author, year)
+                print("\nКнига успешно добавлена!")
             except Exception as e:
                 print(f"Ошибка при добавлении книги: {e}")
 
@@ -40,6 +40,7 @@ def main():
 
             try:
                 library.remove_book(book_id)
+                print("\nКнига успешно удалена!")
             except Exception as e:
                 print(f"Ошибка при удалении книги: {e}")
 
@@ -80,7 +81,8 @@ def main():
             book_id = input("Введите ID книги для обновления статуса: ")
             new_status = input("Введите новый статус книги ('в наличии', 'выдана'): ").strip()
             try:
-                library.update_book_status(book_id, new_status)
+                library.update_status(book_id, new_status)
+                print("\nСтатус книги успешно обновлен!")
             except Exception as e:
                 print(f"Ошибка при обновлении статуса книги: {e}")
 
@@ -91,7 +93,8 @@ def main():
                 file_path = "library.json"
 
             try:
-                library.write_data_to_json(file_path)
+                library.write_data_to_json()
+                print("\nБиблиотека успешно сохранена!")
             except Exception as e:
                 print(f"Ошибка при сохранении библиотеки в файл: {e}")
 
@@ -102,7 +105,8 @@ def main():
                 file_path = "library.json"
 
             try:
-                library.read_data_from_json(file_path)
+                library.read_data_from_json()
+                print("\nБиблиотека успешно загружена!")
             except Exception as e:
                 print(f"Ошибка при загрузке библиотеки из файла: {e}")
 
@@ -112,6 +116,8 @@ def main():
 
         else:
             print("Некорректная команда.")
+        
+        time.sleep(10)
 
 
 

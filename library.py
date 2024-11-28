@@ -134,29 +134,38 @@ class Library:
     """
     VALID_STATUSES = {"в наличии", "выдана"}
 
-    def __init__(self):
+    def __init__(self, file_path: str = "library.json"):
+        
         self.books = {}
+        self.file_path = file_path
+        self.read_data_from_json()
 
 
-    def write_data_to_json(self, file_path):
+
+
+    def write_data_to_json(self):
         """
         Записывает данные библиотеки в файл JSON
         """
         try:
-            with open(file_path, "w", encoding="utf-8") as file:
+            with open(self.file_path, "w", encoding="utf-8") as file:
                 json.dump([book.to_dict() for book in self.books.values()], file, indent=4, ensure_ascii=False)
-            logger.info("Данные успешно записаны в файл library.json")
+            logger.info("Данные успешно записаны в файл %s", self.file_path)
         except Exception as e:
             logger.error("Ошибка при записи данных в файл: %s", e)
             raise ValueError(f"Ошибка при записи данных в файл: {e}") from e
 
 
-    def read_data_from_json(self, file_path):
+    def read_data_from_json(self):
         """
         Читает данные библиотеки из файла JSON
         """
+        if not os.path.exists(self.file_path):
+            logger.warning("Файл %s не найден. Начата новая библиотека.", self.file_path)
+            return
+        
         try:
-            with open(file_path, "r", encoding="utf-8") as file:
+            with open(self.file_path, "r", encoding="utf-8") as file:
                 books_data = json.load(file)
 
                 for book_data in books_data:
@@ -170,11 +179,11 @@ class Library:
                     book.status = book_data["status"]
                     self.books[book.id] = book
 
-            logger.info("Данные успешно загружены из файла library.json")
+            logger.info("Данные успешно загружены из файла %s", self.file_path)
 
         except FileNotFoundError as e:
-            logger.warning("Файл library.json не найден")
-            raise FileNotFoundError("Файл library.json не найден") from e
+            logger.warning("Файл %s не найден", self.file_path)
+            raise FileNotFoundError(f"Файл {self.file_path} не найден") from e
 
         except Exception as e:
             logger.error("Ошибка при чтении данных из файла: %s", e)
@@ -280,12 +289,12 @@ class Library:
             print("Библиотека пуста")
             return
 
-        print(f"{'ID':<36} | {'Название':<20} | {'Автор':<20} | {'Год':<6} | {'Статус':<10}")
+        print(f"{'ID':<36} | {'Название':<35} | {'Автор':<25} | {'Год':<6} | {'Статус':<10}")
         print("-" * 92)
 
         for book in self.books.values():
 
-            print(f"{book.id:<36} | {book.title:<20} | {book.author:<20} | {book.year:<6} | {book.status:<10}")
+            print(f"{book.id:<36} | {book.title:<35} | {book.author:<25} | {book.year:<6} | {book.status:<10}")
 
         logger.info("Отображено книг: %d", len(self.books))
 
