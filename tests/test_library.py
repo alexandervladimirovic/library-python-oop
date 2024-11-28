@@ -1,260 +1,326 @@
 import os
-import sys
 import json
 import uuid
 import unittest
-from io import StringIO
+from unittest.mock import patch
 
-from library import Library
+from library import Library, Book
 
 
-class TestLibrary(unittest.TestCase):
-
+class TestAddBook(unittest.TestCase):
+    
     def setUp(self):
 
         self.library = Library()
-        self.library.add_book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
 
-        self.book_id = next(iter(self.library.books))
-    def test_add_book(self):
+    def test_add_book_success(self):
 
-        book = list(self.library.books.values())[0]
-
-        self.assertEqual(book.title.strip(), "451 градус по Фаренгейту")
-        self.assertEqual(book.author.strip(), "Рэй Брэдбери ")
-        self.assertEqual(book.year, 1953)
-
-    def test_add_books(self):
-
-        self.library.add_book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
-
-        self.assertEqual(len(self.library.books), 2)
-        book = list(self.library.books.values())[1]
-        self.assertEqual(book.title, "Великий Гэтсби")
-
-    #  ______________________________________________________________________________  #
-
-    def test_remove_book(self):
-
-        book_id = next(iter(self.library.books.values())).id
-
-        self.library.remove_book(book_id)
-
-        self.assertEqual(len(self.library.books), 0)
-
-    def test_not_found_remove_book(self):
-
-        invalid_id = str(uuid.uuid4())
-
-        with self.assertRaises(ValueError):
-            self.library.remove_book(invalid_id)
-
-
-#  ______________________________________________________________________________  #
-
-
-class TestLibrarySearch(unittest.TestCase):
-
-    def setUp(self):
-
-        self.library = Library()
-        self.library.add_book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
         self.library.add_book("1984", "Джордж Оруэлл", 1949)
-        self.library.add_book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
-        self.library.add_book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
 
-    def test_by_title(self):
+        self.assertEqual(len(self.library.books), 1)
 
-        results = self.library.search_books(title="Великий Гэтсби")
-        result = self.library.search_books(title="451 градус по Фаренгейту")
+        book = next(iter(self.library.books.values()))
+        
+        self.assertEqual(book.title, "1984")
+        self.assertEqual(book.author, "Джордж Оруэлл")
+        self.assertEqual(book.year, 1949)
+        self.assertEqual(book.status, "В наличии")
 
-        self.assertEqual(len(results), 2)
+    def test_add_book_invalid_title(self):
+        
+        with self.assertRaises(TypeError) as context:
+            self.library.add_book("", "Джордж Оруэлл", 1949)
+
+        self.assertIn("Название должно быть строкой и не может быть пустым", str(context.exception))
+    
+    def test_add_book_invalid_author(self):
+        
+        with self.assertRaises(TypeError) as context:
+            self.library.add_book("1984", "", 1949)
+
+        self.assertIn("Указание автора должно быть в строковом представлении и не может быть пустым", str(context.exception))
+    
+    def test_add_book_invalid_year(self):
+        
+        with self.assertRaises(TypeError) as context:
+            self.library.add_book("1984", "Джордж Оруэлл", "1949")
+
+        self.assertIn("Год должен быть целым числом и не может быть пустым", str(context.exception))
+
+class TestRemoveBook(unittest.TestCase):
+    
+    def setUp(self):
+
+        self.library = Library()
+        self.book = Book("1984", "Джордж Оруэлл", 1949)
+        self.library.books[self.book.id] = self.book
+
+    def test_remove_success(self):
+
+        init_len = len(self.library.books)
+        self.library.remove_book(self.book.id)
+
+        self.assertEqual(len(self.library.books), init_len - 1)
+        self.assertNotIn(self.book.id, self.library.books)
+
+    def test_remove_not_found(self):
+        invalid_id = "invalid id"
+        with self.assertRaises(ValueError) as context:
+            self.library.remove_book(invalid_id)
+        
+        self.assertIn(f"Книга с id {invalid_id} не найдена", str(context.exception))
+
+class TestSearchBook(unittest.TestCase):
+
+    def setUp(self):
+        
+        self.library = Library()
+
+        self.book1 = Book("1984", "Джордж Оруэлл", 1949)
+        self.book2 = Book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
+        self.book3 = Book("Великий Гэтсби", "Ф. Скотт Фицджеральд", 1925)
+
+        self.library.books[self.book1.id] = self.book1
+        self.library.books[self.book2.id] = self.book2
+        self.library.books[self.book3.id] = self.book3
+
+    def test_search_by_title(self):
+        
+        result = self.library.search_books(title="1984")
+
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].title, "1984")
+    
+    def test_search_by_author(self):
 
-    def test_by_author(self):
-
-        results = self.library.search_books(author="Ф. Скотт Фицджеральд")
         result = self.library.search_books(author="Джордж Оруэлл")
 
-        self.assertEqual(len(results), 2)
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].author, "Джордж Оруэлл")
 
-    def test_by_year(self):
+    def test_search_by_year(self):
 
-        results = self.library.search_books(year=1925)
-        result = self.library.search_books(year=1949)
+        result = self.library.search_books(year=1953)
 
-        self.assertEqual(len(results), 2)
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].year, 1953)
 
-    def test_comb(self):
+    def test_seach_by_year_and_author(self):
 
-        results = self.library.search_books(title="1984", author="Джордж Оруэлл")
-        result = self.library.search_books(author="Рэй Брэдбери", year=1953)
+        result = self.library.search_books(author="Рэй Брэдбери", year=1953)
 
-        self.assertEqual(len(results), 1)
         self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].author, "Рэй Брэдбери")
 
-    def test_invalid_key(self):
+    def test_search_by_title_and_author(self):
 
-        with self.assertRaises(ValueError):
-            self.library.search_books(genre="Роман")
+        result = self.library.search_books(title="1984", author="Джордж Оруэлл")
 
-    def test_no_result(self):
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].title, "1984")
 
-        result = self.library.search_books(title="Мы")
-        results = self.library.search_books(author="Евгений Замятин")
+    def test_search_no_results(self):
+
+        result = self.library.search_books(title="Над пропастью во ржи")
 
         self.assertEqual(len(result), 0)
-        self.assertEqual(len(results), 0)
 
+    def test_search_empty_library(self):
+        
+        self.library.books = {}
+        result = self.library.search_books(title="1984")
 
-#  ______________________________________________________________________________  #
+        self.assertEqual(result, [])
 
-
-class TestLibraryAll(unittest.TestCase):
+class TestSearchByIdBook(unittest.TestCase):
 
     def setUp(self):
 
         self.library = Library()
 
-    def test_empty_library(self):
+        self.book1 = Book("1984", "Джордж Оруэлл", 1949)
+        self.book2 = Book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
 
-        expected_output = "Библиотека пуста\n"
+        self.library.books[self.book1.id] = self.book1
+        self.library.books[self.book2.id] = self.book2
 
-        current_output = StringIO()
-        sys.stdout = current_output
+    def test_search_success(self):
+        
+        result = self.library.search_books_by_id(self.book1.id)
+
+        self.assertEqual(result.id, self.book1.id)
+        self.assertEqual(result.title, "1984")
+
+    def test_search_invalid(self):
+
+        result = self.library.search_books_by_id("nonexistent_id")
+        self.assertIsNone(result)
+
+class TestPrintAllBooks(unittest.TestCase):
+    
+    def setUp(self):
+    
+        self.library = Library()
+
+        self.book1 = Book("1984", "Джордж Оруэлл", 1949)
+        self.book2 = Book("451 градус по Фаренгейту", "Рэй Брэдбери", 1953)
+
+        self.library.books[self.book1.id] = self.book1
+        self.library.books[self.book2.id] = self.book2
+
+    @patch("builtins.print")
+    def test_all(self, mock_print):
+       
         self.library.all_books()
-        sys.stdout = sys.__stdout__
 
-        self.assertEqual(current_output.getvalue(), expected_output)
+        mock_print.assert_any_call(f"{'ID':<36} | {'Название':<20} | {'Автор':<20} | {'Год':<6} | {'Статус':<10}")
+        mock_print.assert_any_call("-" * 92)
 
-    def test_all_books(self):
+        mock_print.assert_any_call(
+            f"{self.book1.id:<36} | {self.book1.title:<20} | {self.book1.author:<20} | {self.book1.year:<6} | {self.book1.status:<10}"
+        )
+        mock_print.assert_any_call(
+            f"{self.book2.id:<36} | {self.book2.title:<20} | {self.book2.author:<20} | {self.book2.year:<6} | {self.book2.status:<10}"
+        )
 
-        self.library.add_book("1984", "Джордж Оруэлл", 1949)
-        self.library.add_book("Мы", "Евгений Замятин", 1920)
+    @patch("builtins.print")
+    def test_all_books_empty_library(self, mock_print):
 
-        current_output = StringIO()
-        sys.stdout = current_output
+        self.library.books = {}
         self.library.all_books()
-        sys.stdout = sys.__stdout__
-        output_lines = current_output.getvalue().splitlines()
 
-        self.assertEqual(
-            output_lines[0],
-            "ID                                   | Название             | Автор                | Год    | Статус    ",
-        )
-        self.assertEqual(
-            output_lines[1],
-            "--------------------------------------------------------------------------------------------",
-        )
-        self.assertEqual(len(output_lines), 4)
-
-        self.assertIn("1984", output_lines[2])
-        self.assertIn("Джордж Оруэлл", output_lines[2])
-        self.assertIn("Мы", output_lines[3])
-        self.assertIn("Евгений Замятин", output_lines[3])
-
-
-#  ______________________________________________________________________________  #
-
+        mock_print.assert_called_once_with("Библиотека пуста")
 
 class TestUpdateStatus(unittest.TestCase):
 
     def setUp(self):
-        
+
         self.library = Library()
 
-        self.library.add_book("1984", "Джордж Оруэлл", 1949)
-        self.library.add_book("Мы", "Евгений Замятин", 1920)
+        self.library.VALID_STATUSES = {"в наличии", "выдана"}
+        self.book1 = Book("1984", "George Orwell", 1949)
 
-        self.book_id = next(iter(self.library.books)).id
+        self.library.books[self.book1.id] = self.book1
 
-    def test_update(self):
 
-        self.library.update_status(self.book_id, "Выдана")
+    def test_update_status_success(self):
 
-        updated_book = next(iter(self.library.books.values())).id
+        self.library.update_status(self.book1.id, "Выдана")
+
+        self.assertEqual(self.book1.status, "Выдана")
+
+    def test_update_status_invalid(self):
         
-        self.assertEqual(updated_book.status, "Выдана")
-
-    def test_invalid_update(self):
-
         with self.assertRaises(ValueError) as context:
-            self.library.update_status(self.book_id, "Потеряна")
+            self.library.update_status(self.book1.id, "Неизвестный статус")
 
         self.assertIn("Недопустимый статус", str(context.exception))
 
+    def test_update_status_case_insensitive(self):
+        
+        self.library.update_status(self.book1.id, "выдана")
+        self.assertEqual(self.book1.status, "Выдана")
 
-#  ______________________________________________________________________________  #
-
-class TestJsonLibrary(unittest.TestCase):
+class TestWriteJson(unittest.TestCase):
 
     def setUp(self):
 
         self.library = Library()
-        self.test_file = "test_library.json"
 
         self.library.add_book("1984", "Джордж Оруэлл", 1949)
-        self.library.add_book("Мы", "Евгений Замятин", 1920)
+        self.library.add_book("451° по Фаренгейту", "Рэй Брэдбери", 1953)
 
-    def tearDown(self):
+        self.file_path = "test_library.json"
 
-        if os.path.exists(self.test_file):
-            os.remove(self.test_file)
+    def tearDown(self) -> None:
 
-    def test_write_data_to_json(self):
+        if os.path.exists(self.file_path):
+            os.remove(self.file_path)
 
-        self.library.write_data_to_json(self.test_file)
+    def test_write_json_success(self):
 
-        self.assertTrue(os.path.exists(self.test_file))
+        self.library.write_data_to_json(self.file_path)
 
-        with open(self.test_file, "r", encoding="utf-8") as file:
+        self.assertTrue(os.path.exists(self.file_path))
+
+        with open(self.file_path, "r", encoding="utf-8") as file:
             data = json.load(file)
 
-        self.assertEqual(len(data), 2)
-        self.assertEqual(data[0]["title"], "1984")
-        self.assertEqual(data[1]["title"], "Мы")
+        exp_data = [book.to_dict() for book in self.library.books.values()]
 
-    def test_read_data_from_json(self):
+        self.assertEqual(data, exp_data)
 
-        books_data = [
+    def test_write_json_failed(self):
+
+        invalid_path = "/Этого пути нет/я сказал нет/test_library.json"
+
+        with self.assertRaises(ValueError) as context:
+            self.library.write_data_to_json(invalid_path)
+
+        self.assertIn("Ошибка при записи данных в файл", str(context.exception))
+
+class TestReadJson(unittest.TestCase):
+
+    def setUp(self):
+
+        self.library = Library()
+        self.path_file = "test_library.json"
+
+        self.books_data = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "1984",
+                "author": "Джордж Оруэлл",
+                "year": 1949,
+                "status": "В наличии"
+            },
             {
                 "id": str(uuid.uuid4()),
                 "title": "451 градус по Фаренгейту",
                 "author": "Рэй Брэдбери",
                 "year": 1953,
-                "status": "В наличии",
+                "status": "Выдана"  
             }
         ]
-        with open(self.test_file, "w", encoding="utf-8") as file:
-            json.dump(books_data, file, indent=4, ensure_ascii=False)
 
-        self.library.read_data_from_json(self.test_file)
+        with open(self.path_file, "w", encoding="utf-8") as file:
+            json.dump(self.books_data, file, ensure_ascii=False, indent=4)
 
-        self.assertEqual(len(self.library.books), 3)
+    def tearDown(self):
 
-        import_book = list(self.library.books.values())[-1]
+            if os.path.exists(self.path_file):
+                os.remove(self.path_file)
 
-        self.assertEqual(import_book.title, "451 градус по Фаренгейту")
-        self.assertEqual(import_book.author, "Рэй Брэдбери")
-        self.assertEqual(import_book.year, 1953)
-        self.assertEqual(import_book.status, "В наличии")
+    def test_read_json_success(self):
 
-    def test_invalid_json(self):
+        self.library.read_data_from_json(self.path_file)
 
-        with open(self.test_file, "w", encoding="utf-8") as file:
-            file.write("invalid json")
+        self.assertEqual(len(self.library.books), len(self.books_data))
 
-        with self.assertRaises(ValueError):
-            self.library.read_data_from_json(self.test_file)
+        for book_data in self.books_data:
 
-    def test_write_empty_json(self):
+            book = self.library.books[book_data["id"]]
 
-        empty_library = Library()
-        empty_library.write_data_to_json(self.test_file)
+            self.assertEqual(book.title, book_data["title"])
+            self.assertEqual(book.author, book_data["author"])
+            self.assertEqual(book.year, book_data["year"])
+            self.assertEqual(book.status, book_data["status"])
 
-        with open(self.test_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
+    def test_read_json_not_found_file(self):
 
-        self.assertEqual(len(data), 0)
+        invalid_path = "/Этого пути нет/я сказал нет/test_library.json"
+
+        with self.assertRaises(FileNotFoundError) as context:
+            self.library.read_data_from_json(invalid_path)
+
+        self.assertIn("Файл library.json не найден", str(context.exception))
+
+    def test_read_json_invalid_format(self):
+
+        with open(self.path_file, 'w', encoding='utf-8') as file:
+            file.write("Передается строка")
+
+        with self.assertRaises(ValueError) as context:
+            self.library.read_data_from_json(self.path_file)
+
+        self.assertIn("Ошибка при чтении данных из файла", str(context.exception))
