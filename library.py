@@ -98,7 +98,40 @@ class Book:
 
 
 class Library:
+    """
+    Класс Library представляет собой систему управления библиотекой.
 
+    Этот класс предоставляет функциональность для работы с библиотекой книг, 
+    включая добавление, удаление, поиск, обновление статусов книг, а также 
+    чтение и запись данных в формате JSON.
+
+    Методы:
+
+    write_data_to_json(file_path: str) -> None
+        Записывает данные библиотеки в указанный JSON-файл.
+
+    read_data_from_json(file_path: str) -> None
+        Считывает данные библиотеки из указанного JSON-файла.
+
+    add_book(title: str, author: str, year: int) -> None
+        Добавляет новую книгу в библиотеку.
+
+    remove_book(book_id: str) -> None
+        Удаляет книгу из библиотеки по указанному id.
+
+    search_books(**kwargs) -> list
+        Ищет книги по заданным параметрам (title, author, year).
+
+    search_books_by_id(book_id: str) -> Union[Book, None]
+        Ищет книгу в библиотеке по id.
+
+    all_books() -> None
+        Отображает список всех книг в библиотеке в табличном формате.
+
+    update_status(book_id: str, new_status: str) -> None
+        Изменяет статус книги по id.
+
+    """
     VALID_STATUSES = {"в наличии", "выдана"}
 
     def __init__(self):
