@@ -1,13 +1,13 @@
 import time
 
-from library import Library
+from library.library import Library
 
 def main():
     """
     Консольный интерфейс для управления библиотекой.
     """
 
-    library = Library()
+    library = Library(input("Введите путь к файлу библиотеки: "))
 
     while True:
 
@@ -87,11 +87,6 @@ def main():
                 print(f"Ошибка при обновлении статуса книги: {e}")
 
         elif command == "6":
-            file_path = input("Введите путь к файлу JSON (по умолчанию: library.json): ").strip()
-
-            if not file_path:
-                file_path = "library.json"
-
             try:
                 library.write_data_to_json()
                 print("\nБиблиотека успешно сохранена!")
@@ -99,10 +94,8 @@ def main():
                 print(f"Ошибка при сохранении библиотеки в файл: {e}")
 
         elif command == "7":
-            file_path = input("Введите путь к файлу JSON (по умолчанию: library.json): ").strip()
 
-            if not file_path:
-                file_path = "library.json"
+
 
             try:
                 library.read_data_from_json()
@@ -117,7 +110,7 @@ def main():
         else:
             print("Некорректная команда.")
         
-        time.sleep(10)
+        time.sleep(5)
 
 
 
